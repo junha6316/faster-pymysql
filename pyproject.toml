@@ -1,0 +1,19 @@
+[build-system]
+requires = ["maturin>=1.15,<2.0"]
+build-backend = "maturin"
+
+[project]
+name = "faster-pymysql"
+description = "pymysql 결과셋 행 파싱을 Rust로 대체한다"
+requires-python = ">=3.11"
+dependencies = ["pymysql>=1.0"]
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+]
+dynamic = ["version"]
+
+[tool.maturin]
+features = ["extension-module"]
+python-source = "python"
+module-name = "faster_pymysql._rust"

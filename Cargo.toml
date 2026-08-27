@@ -1,0 +1,19 @@
+[package]
+name = "faster-pymysql"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "_rust"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.29.0", features = ["abi3-py311"] }
+
+# maturin이 켠다. 기본으로 켜면 cargo test가 링크 에러로 죽는다.
+[features]
+extension-module = ["pyo3/extension-module"]
+
+[profile.release]
+lto = true
+codegen-units = 1
