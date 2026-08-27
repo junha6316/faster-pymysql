@@ -11,11 +11,7 @@ use pyo3::types::{PyBytes, PyDate, PyDateTime, PyDelta, PyString};
 use crate::schema::{ColumnSpec, Decoder, Encoding};
 
 /// 필드 하나를 파이썬 객체로.
-pub fn decode<'py>(
-    py: Python<'py>,
-    data: &[u8],
-    spec: &ColumnSpec,
-) -> PyResult<Bound<'py, PyAny>> {
+pub fn decode<'py>(py: Python<'py>, data: &[u8], spec: &ColumnSpec) -> PyResult<Bound<'py, PyAny>> {
     match spec.decoder {
         Decoder::Raw => materialize(py, data, &spec.encoding),
         Decoder::Int => match parse_int(data) {
@@ -54,7 +50,10 @@ pub fn decode<'py>(
         },
         Decoder::Time => match parse_timedelta(data) {
             Some(micros) => {
-                let (days, rem) = (micros.div_euclid(86_400_000_000), micros.rem_euclid(86_400_000_000));
+                let (days, rem) = (
+                    micros.div_euclid(86_400_000_000),
+                    micros.rem_euclid(86_400_000_000),
+                );
                 let secs = rem / 1_000_000;
                 let us = rem % 1_000_000;
                 Ok(PyDelta::new(py, days as i32, secs as i32, us as i32, true)?.into_any())
@@ -109,11 +108,7 @@ fn decode_via_python<'py>(
 }
 
 /// pymysql의 원래 converter를 부른다. 입력도 pymysql이 넘겼을 것과 같게 만든다.
-fn fallback<'py>(
-    py: Python<'py>,
-    data: &[u8],
-    spec: &ColumnSpec,
-) -> PyResult<Bound<'py, PyAny>> {
+fn fallback<'py>(py: Python<'py>, data: &[u8], spec: &ColumnSpec) -> PyResult<Bound<'py, PyAny>> {
     let value = materialize(py, data, &spec.encoding)?;
     match &spec.fallback {
         Some(f) => f.bind(py).call1((value,)),
@@ -336,7 +331,10 @@ mod tests {
             Some((2007, 2, 25, 23, 6, 20, 0))
         );
         // (?:.(\d{1,6}))? 의 . 이 이스케이프돼 있지 않아 아무 글자나 구분자가 된다.
-        assert_eq!(parse_datetime(b"2007-02-25 23:06:20x12").unwrap().6, 120_000);
+        assert_eq!(
+            parse_datetime(b"2007-02-25 23:06:20x12").unwrap().6,
+            120_000
+        );
         // 소수부 자리는 6개까지만 먹는다.
         assert_eq!(
             parse_datetime(b"2007-02-25 23:06:20.1234567").unwrap().6,
