@@ -40,8 +40,9 @@ jobs:
       - run: cargo fmt --check
       - run: cargo clippy --all-targets -- -D warnings
       - run: cargo test
-      - run: pip install maturin pymysql pytest
-      - run: maturin develop --release
+      - run: pip install pymysql pytest
+      # maturin develop은 virtualenv를 요구한다. CI에는 없으므로 빌드 백엔드로 설치한다.
+      - run: pip install .
       - run: pytest tests -q
       # 차분 테스트가 통과해도 벤치가 도는지는 따로 본다.
       - run: python bench/bench_row.py 2000 1
