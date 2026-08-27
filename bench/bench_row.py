@@ -121,9 +121,13 @@ def main():
     print("\n결과셋 전체 (프레이밍 포함, 소켓 제외)")
 
     def py_full():
+        # _read_rowdata_packet과 같게 행을 모아 tuple로 만든다. 배치 쪽도
+        # 결과셋 전체를 만들어 들고 있으므로 여기서 버리면 비교가 기운다.
         def run():
+            rows = []
             for payload in payloads:
-                ORIGINAL_READ_ROW(result, MysqlPacket(payload, ENCODING))
+                rows.append(ORIGINAL_READ_ROW(result, MysqlPacket(payload, ENCODING)))
+            return tuple(rows)
 
         return run
 

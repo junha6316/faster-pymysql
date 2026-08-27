@@ -5,7 +5,7 @@
 
 use pyo3::exceptions::PyAssertionError;
 use pyo3::prelude::*;
-use pyo3::types::PyTuple;
+use pyo3::types::{PyBytes, PyTuple};
 
 use crate::decode::decode;
 use crate::lenenc::{Field, ParseError, read_field};
@@ -33,14 +33,15 @@ pub fn parse_row<'py>(
 #[pyfunction]
 pub fn parse_rows<'py>(
     py: Python<'py>,
-    packets: Vec<Vec<u8>>,
+    packets: Vec<Bound<'py, PyBytes>>,
     schema: &Schema,
 ) -> PyResult<Bound<'py, PyTuple>> {
     let mut rows: Vec<Bound<'py, PyAny>> = Vec::with_capacity(packets.len());
     let mut values: Vec<Bound<'py, PyAny>> = Vec::with_capacity(schema.cols.len());
     for packet in &packets {
         values.clear();
-        fill_row(py, packet, 0, schema, &mut values)?;
+        // as_bytes()는 파이썬 bytes를 빌려온다. 복사하지 않는다.
+        fill_row(py, packet.as_bytes(), 0, schema, &mut values)?;
         rows.push(PyTuple::new(py, values.drain(..))?.into_any());
     }
     PyTuple::new(py, rows)
@@ -74,25 +75,6 @@ fn fill_row<'py>(
         });
     }
     Ok(pos)
-}
-
-/// 진단용. 파이썬 쪽 테스트가 쓴다.
-#[pyfunction]
-pub fn field_count(data: &[u8]) -> PyResult<usize> {
-    let mut pos = 0;
-    let mut n = 0;
-    loop {
-        match read_field(data, pos) {
-            Ok((_, next)) => {
-                pos = next;
-                n += 1;
-            }
-            Err(ParseError::Exhausted) => return Ok(n),
-            Err(ParseError::Truncated) => {
-                return Err(PyAssertionError::new_err("행 패킷이 잘렸다"));
-            }
-        }
-    }
 }
 
 /// 파이썬 어댑터가 쓰는 decoder id 상수. 여기와 파이썬이 어긋나면 조용히 망가지므로

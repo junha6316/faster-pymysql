@@ -15,7 +15,6 @@ fn _rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<schema::Schema>()?;
     m.add_function(wrap_pyfunction!(row::parse_row, m)?)?;
     m.add_function(wrap_pyfunction!(row::parse_rows, m)?)?;
-    m.add_function(wrap_pyfunction!(row::field_count, m)?)?;
     row::register_decoder_ids(m)?;
     Ok(())
 }
