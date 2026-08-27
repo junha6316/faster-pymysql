@@ -2,3 +2,4 @@
 **/__pycache__/
 *.so
 .venv*/
+/.pytest_cache/
