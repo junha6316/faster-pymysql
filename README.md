@@ -34,6 +34,13 @@ VIRTUAL_ENV=$PWD/.venv312 ./.venv312/bin/maturin develop --release
 ./.venv312/bin/python bench/bench_row.py 20000 5
 ```
 
+`tests/test_e2e.py`는 실제 서버가 필요하다. 없으면 skip된다.
+
+```bash
+docker run -d --name fpm-e2e -e MYSQL_ALLOW_EMPTY_PASSWORD=1 \
+  -e MYSQL_DATABASE=fpm -p 3307:3306 mysql:8.4
+```
+
 ## 소켓은 옮기지 않는다
 
 pymysql `connections.py:806` `_read_bytes()`의 `self._rfile.read()`가 gevent가
@@ -62,8 +69,15 @@ Rust는 **MySQL이 실제로 보내는 정상 형태만** 빠른 길로 처리�
 | 사내 커스텀 conv가 걸린 컬럼 | 원래 converter |
 
 그래서 "Rust가 틀리게 계산한 값"이라는 게 정의상 나올 수 없다. 나머지는
-차분 테스트가 본다 — 무작위 결과셋을 두 파서에 넣고 **값과 타입이 모두** 같은지
-비교한다 (`1 == 1.0 == True`라서 `==`만으로는 못 잡는다).
+테스트 두 겹이 본다. 둘 다 **값과 타입이 모두** 같은지 비교한다
+(`1 == 1.0 == True`라서 `==`만으로는 못 잡는다).
+
+- `tests/test_differential.py` — 합성 패킷. 경계값과 잘린 버퍼를 몰아넣는다
+- `tests/test_e2e.py` — 실제 MySQL 8.4. 서버가 실제로 붙이는 charsetnr, 서버가
+  보내는 값 형태, unbuffered/Dict 커서, latin1 커넥션, 16MB를 넘어 쪼개져 오는 행
+
+e2e는 Rust가 **실제로 불렸는지 세고**, 한 번도 안 불렸으면 실패한다. `install()`이
+조용히 실패하면 양쪽 다 pymysql이 되어 비교가 무의미하게 통과하기 때문이다.
 
 재현해야 했던 pymysql의 기벽들:
 
@@ -86,6 +100,5 @@ Rust는 **MySQL이 실제로 보내는 정상 형태만** 빠른 길로 처리�
 
 ## 다음
 
-- [ ] 실제 MySQL 연결로 end-to-end 확인
 - [ ] gevent 환경에서 그린렛 공정성 측정 (배치 크기 정하기)
 - [ ] 패킷 프레이밍까지 Rust로 (기준선에서 8% 구간이라 우선순위 낮음)

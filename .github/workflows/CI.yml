@@ -15,6 +15,20 @@ jobs:
     strategy:
       matrix:
         python: ["3.11", "3.12"]
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 1
+          MYSQL_DATABASE: fpm
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+    env:
+      # tests/test_e2e.py는 서버가 없으면 skip한다. CI에서는 반드시 돌아야 한다.
+      FPM_MYSQL_PORT: 3306
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

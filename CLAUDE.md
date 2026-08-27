@@ -14,8 +14,11 @@ pymysql 결과셋의 행 파싱을 Rust(PyO3)로 대체한다. 배경과 측정�
 
 - Rust는 **정상 형태만** 빠른 길로 처리하고, 벗어나면 pymysql의 원래 converter를
   값 하나 단위로 부른다. 새 디코더를 넣을 때도 이 규칙을 지킨다
-- 디코더나 스캐너를 건드렸으면 `tests/test_differential.py`를 반드시 돌린다.
-  값뿐 아니라 **타입까지** 비교한다 (`1 == 1.0 == True`)
+- 디코더나 스캐너를 건드렸으면 `tests/test_differential.py`(합성 패킷)와
+  `tests/test_e2e.py`(실제 MySQL)를 둘 다 돌린다. 값뿐 아니라 **타입까지**
+  비교한다 (`1 == 1.0 == True`)
+- e2e는 서버가 없으면 조용히 skip된다. "통과"를 봤다고 돌았다고 믿지 말고
+  skip 개수를 본다
 - pymysql의 기벽(0xff→NULL, 짧은 tuple, `re.match`의 느슨함)을 "고치지" 않는다.
   재현 대상이다
 
@@ -32,6 +35,10 @@ cargo test                                              # Rust 단위 테스트
 VIRTUAL_ENV=$PWD/.venv312 ./.venv312/bin/maturin develop --release
 ./.venv312/bin/python -m pytest tests -q                # 차분 + install 테스트
 ./.venv312/bin/python bench/bench_row.py [rows] [repeat]  # 기본 20000 5
+
+# e2e용 일회용 서버 (없으면 test_e2e.py가 skip된다)
+docker run -d --name fpm-e2e -e MYSQL_ALLOW_EMPTY_PASSWORD=1 \
+  -e MYSQL_DATABASE=fpm -p 3307:3306 mysql:8.4
 ```
 
 Rust를 고쳤으면 `maturin develop`을 다시 돌려야 파이썬 테스트에 반영된다.

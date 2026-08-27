@@ -6,7 +6,6 @@
 
 from __future__ import annotations
 
-import math
 import random
 
 import pytest
@@ -15,6 +14,7 @@ from pymysql.constants import FIELD_TYPE
 from pymysql.protocol import MysqlPacket
 
 import faster_pymysql
+from compare import same
 from faster_pymysql import parse_row, parse_rows
 from synthetic import (
     BINARY_CHARSET,
@@ -48,17 +48,6 @@ class FakeResult:
 
     def __init__(self, converters):
         self.converters = converters
-
-
-def same(a, b) -> bool:
-    """값과 타입이 모두 같은가. NaN은 자기 자신과 같은 것으로 본다."""
-    if type(a) is not type(b):
-        return False
-    if isinstance(a, tuple):
-        return len(a) == len(b) and all(same(x, y) for x, y in zip(a, b))
-    if isinstance(a, float) and math.isnan(a) and math.isnan(b):
-        return True
-    return a == b
 
 
 def outcome(call):
